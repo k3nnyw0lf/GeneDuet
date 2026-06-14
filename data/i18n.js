@@ -30,6 +30,7 @@ export const STRINGS = {
     q_allergy: "Based on my DNA report, what allergy or food-sensitivity risks might I have — and what can't DNA tell me about allergies?",
     myths_intro: '<b>Deliberately not predicted</b> (no real single-gene basis, unlike what some sites sell): ',
     disclaimer: 'Educational only — <b>not a medical device</b> and not a legal paternity test. Consumer arrays miss rare variants; palindromic SNPs and some health markers are flagged as not reliably callable. Confirm anything important with a clinician or genetic counselor.',
+    faq_title: 'ℹ️ How this works · FAQ',
     hidden: (n) => `${n} sensitive/adult-onset result(s) hidden — toggle above to reveal.`,
   },
   es: {
@@ -59,6 +60,7 @@ export const STRINGS = {
     q_allergy: 'Según mi informe de ADN, ¿qué riesgos de alergias o sensibilidades alimentarias podría tener — y qué no puede decirme el ADN sobre alergias?',
     myths_intro: '<b>Deliberadamente no predicho</b> (sin base real de un solo gen, a diferencia de lo que venden algunos sitios): ',
     disclaimer: 'Solo educativo — <b>no es un dispositivo médico</b> ni una prueba de paternidad legal. Los arrays de consumidor omiten variantes raras; los SNP palindrómicos y algunos marcadores de salud se señalan como no determinables de forma fiable. Confirma cualquier cosa importante con un médico o asesor genético.',
+    faq_title: 'ℹ️ Cómo funciona · Preguntas frecuentes',
     hidden: (n) => `${n} resultado(s) sensible(s)/de aparición adulta oculto(s) — usa el interruptor de arriba para mostrarlos.`,
   },
 };
@@ -155,3 +157,51 @@ export const LABELS = {
 };
 
 export const tr = (label, lang) => (lang === "es" && LABELS[label]) ? LABELS[label] : label;
+
+// FAQ as [question, answer] pairs per language.
+export const FAQ = {
+  en: [
+    ["Is my DNA private? Where does it go?",
+     "It never leaves your device. Your file is read and analyzed entirely in your browser — no upload, no server, no account. The page's security policy blocks all network access; the only exception is the optional AI chat, which talks to a local AI on your own computer. Close the tab and nothing is kept."],
+    ["How do I get my raw DNA file?",
+     "Export it from your testing site. AncestryDNA: Settings → Download DNA Data (you get a .zip — unzip it to a .txt). 23andMe: Settings → Browse Raw Data → Download. Then drop that .txt/.csv here."],
+    ["How accurate is this? Is it medical advice?",
+     "It's educational, not a medical device. Trait calls marked “high” are well-established; “medium/low” are tendencies; polygenic and disease scores are research-grade and NOT diagnoses. Confirm anything important with a doctor or genetic counselor."],
+    ["Is the relationship / paternity check a real test?",
+     "It's genetically rigorous (the same IBS0 + kinship method labs use), but NOT a legal, court-admissible paternity test. For anything legal, use an accredited lab."],
+    ["Why are some results blank or “not reliably callable”?",
+     "Consumer chips don't include every position (e.g. AncestryDNA lacks the main APOE marker). And palindromic SNPs (A/T, C/G) can't be strand-resolved from array data — so we refuse to guess rather than show a false result."],
+    ["Can you predict my baby's looks or IQ?",
+     "No — and anyone claiming to is overselling. Appearance and intelligence are highly polygenic; DNA gives weak tendencies at best, never a number. We deliberately don't fake these."],
+    ["Why don't you show all the traits Ancestry does?",
+     "About half of those (tongue rolling, widow's peak, finger length, “leader/optimist”) have no real single-gene basis. We list and exclude them rather than pad the report with noise."],
+    ["Do I need anything for the AI chat?",
+     "Yes — the chat uses a free local AI (Ollama) on your own machine, so nothing leaves your device. Install Ollama and run: ollama run llama3.2. Everything else works without it."],
+    ["Why is your ancestry estimate different from AncestryDNA's?",
+     "Ours is a coarse cross-check from a small marker set; your testing company uses far larger reference panels and is more accurate. Trust theirs for ethnicity detail."],
+    ["Is it free and open source?",
+     "Yes — free and open-source (MIT). It's a static web app you can run locally or self-host."],
+  ],
+  es: [
+    ["¿Mi ADN es privado? ¿A dónde va?",
+     "Nunca sale de tu dispositivo. Tu archivo se lee y analiza completamente en tu navegador — sin subidas, sin servidor, sin cuenta. La política de seguridad de la página bloquea todo acceso a la red; la única excepción es el chat de IA opcional, que habla con una IA local en tu propia computadora. Cierra la pestaña y no se guarda nada."],
+    ["¿Cómo obtengo mi archivo de ADN en bruto?",
+     "Expórtalo desde tu sitio de pruebas. AncestryDNA: Ajustes → Descargar datos de ADN (obtienes un .zip — descomprímelo a un .txt). 23andMe: Ajustes → Ver datos en bruto → Descargar. Luego suelta ese .txt/.csv aquí."],
+    ["¿Qué tan preciso es? ¿Es consejo médico?",
+     "Es educativo, no un dispositivo médico. Los rasgos marcados “high” están bien establecidos; “medium/low” son tendencias; las puntuaciones poligénicas y de enfermedad son de investigación y NO son diagnósticos. Confirma cualquier cosa importante con un médico o asesor genético."],
+    ["¿La verificación de parentesco/paternidad es una prueba real?",
+     "Es genéticamente rigurosa (el mismo método de IBS0 + parentesco que usan los laboratorios), pero NO es una prueba de paternidad legal admisible en un tribunal. Para algo legal, usa un laboratorio acreditado."],
+    ["¿Por qué algunos resultados están en blanco o “no determinables”?",
+     "Los chips de consumidor no incluyen cada posición (p. ej., AncestryDNA carece del marcador principal de APOE). Y los SNP palindrómicos (A/T, C/G) no se pueden resolver de hebra con datos de array — así que preferimos no adivinar antes que mostrar un resultado falso."],
+    ["¿Pueden predecir el aspecto o el coeficiente intelectual de mi bebé?",
+     "No — y quien diga que sí está exagerando. El aspecto y la inteligencia son muy poligénicos; el ADN da tendencias débiles como mucho, nunca un número. Deliberadamente no falsificamos esto."],
+    ["¿Por qué no muestran todos los rasgos que muestra Ancestry?",
+     "Cerca de la mitad de esos (enrollar la lengua, pico de viuda, longitud de los dedos, “líder/optimista”) no tienen base real de un solo gen. Los listamos y excluimos en vez de llenar el informe con ruido."],
+    ["¿Necesito algo para el chat de IA?",
+     "Sí — el chat usa una IA local gratuita (Ollama) en tu propia máquina, así que nada sale de tu dispositivo. Instala Ollama y ejecuta: ollama run llama3.2. Todo lo demás funciona sin esto."],
+    ["¿Por qué su estimación de ascendencia difiere de la de AncestryDNA?",
+     "La nuestra es un contraste aproximado a partir de un pequeño conjunto de marcadores; tu empresa de pruebas usa paneles de referencia mucho mayores y es más precisa. Confía en la suya para el detalle de etnicidad."],
+    ["¿Es gratis y de código abierto?",
+     "Sí — gratis y de código abierto (MIT). Es una app web estática que puedes ejecutar localmente o alojar tú mismo."],
+  ],
+};

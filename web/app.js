@@ -2,7 +2,7 @@
 // 'unsafe-inline') can stay locked down. Bilingual (EN/ES) via i18n.
 import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, MYTHS } from "./engine.js";
 import { askLlama } from "./chat.js";
-import { ui, tr } from "../data/i18n.js";
+import { ui, tr, FAQ } from "../data/i18n.js";
 
 const genomes = {};
 let lang = "en", analyzed = false, chatContext = "";
@@ -16,6 +16,8 @@ function applyLang(l) {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = ui(el.dataset.i18nPh, l); });
   const mn = document.getElementById("mythnote");
   if (mn) mn.innerHTML = ui("myths_intro", l) + MYTHS.map((m) => tr(m, l)).join(" · ") + ".";
+  const fb = document.getElementById("faqbody");
+  if (fb) fb.innerHTML = (FAQ[l] || FAQ.en).map(([q, a]) => `<details class="faqitem"><summary>${esc(q)}</summary><div class="note">${esc(a)}</div></details>`).join("");
   document.querySelectorAll("[data-lang]").forEach((a) => a.classList.toggle("on", a.dataset.lang === l));
   if (analyzed) render();
 }

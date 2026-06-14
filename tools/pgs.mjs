@@ -113,52 +113,36 @@ function runPGS(label, scoringPath, people, extra = {}) {
 }
 
 // ---------- main ----------
+// Usage: node tools/pgs.mjs <dna1.txt> <dna2.txt> ... [--minor=<name>]
 const base = "private";
-const people = [
-  { name: "Ken", genome: parseGenome(`${base}/dad.txt`) },
-  { name: "Daine", genome: parseGenome(`${base}/mom.txt`) },
-  { name: "Daniel", genome: parseGenome(`${base}/son.txt`) },
-];
+const argv = process.argv.slice(2);
+const files = argv.filter((a) => !a.startsWith("--"));
+const minorNames = new Set(argv.filter((a) => a.startsWith("--minor=")).map((a) => a.slice(8)));
+if (!files.length) { console.error("Usage: node tools/pgs.mjs <dna1.txt> <dna2.txt> ... [--minor=<name>]"); process.exit(1); }
+const nameOf = (p) => p.split(/[\\/]/).pop().replace(/\.[^.]+$/, "");
+const people = files.map((p) => ({ name: nameOf(p), genome: parseGenome(p) }));
 
 console.log("════════  GeneDuet — polygenic scores  ════════");
-console.log("Relative to THESE 3 people only · not a population percentile · not a diagnosis.");
+console.log("Relative to the loaded people only · not a population percentile · not a diagnosis.");
 
 runPGS("COGNITIVE / fluid-intelligence tendency (PGS001232)", `${base}/pgs/PGS001232.txt`, people, {
-  fn(scores) {
-    const ken = scores.find((s) => s.name === "Ken"), dan = scores.find((s) => s.name === "Daniel"), dai = scores.find((s) => s.name === "Daine");
-    const tracks = dan.raw > ken.raw;
-    console.log(`\n  Sanity check vs known IQ (Daniel 152 > Ken 142):`);
-    console.log(`    DNA cognitive score ordering Daniel>Ken? ${tracks ? "YES — score tracks the known IQs" : "NO — score does NOT track (illustrates PGS ≠ IQ)"}  [n=2, anecdotal]`);
-    const mid = (ken.raw + dai.raw) / 2;
-    const midz = (mid - (scores.reduce((a, b) => a + b.raw, 0) / 3)) / (Math.sqrt(scores.reduce((a, b) => a + (b.raw - (scores.reduce((x, y) => x + y.raw, 0) / 3)) ** 2, 0) / 3) || 1);
-    console.log(`\n  A future Ken+Daine child (cognitive PGS): expected ≈ midpoint of you two (z≈${midz >= 0 ? "+" : ""}${midz.toFixed(2)} vs this trio).`);
-    console.log(`    ⚠️ This is NOT an IQ prediction. Cannot produce a number. Children also regress toward the population mean.`);
-  },
+  fn() { console.log(`\n  ⚠️ Explains only ~7–12% of variance — a population tendency, NOT an IQ value. Children regress toward the mean.`); },
 });
-
 runPGS("HEIGHT tendency (PGS000297)", `${base}/pgs/PGS000297.txt`, people, {
-  fn(scores) {
-    const ken = scores.find((s) => s.name === "Ken"), dai = scores.find((s) => s.name === "Daine");
-    console.log(`\n  A future Ken+Daine child: expected height tendency ≈ midpoint of you two (height PGS is genuinely predictive, ~40% of variance).`);
-  },
+  fn() { console.log(`\n  A child of two people ≈ midpoint of their scores. Height PGS is genuinely predictive (~40% of variance).`); },
 });
-
 runPGS("BMI / body-size tendency (PGS000298)", `${base}/pgs/PGS000298.txt`, people, {
   fn() { console.log(`\n  Higher score = genetic tendency toward higher BMI. Diet & activity dominate the outcome.`); },
 });
-
 runPGS("TYPE-2 DIABETES risk tendency (PGS000036)", `${base}/pgs/PGS000036.txt`, people, {
   fn() { console.log(`\n  Higher score = higher genetic T2D liability — a risk nudge, very modifiable by lifestyle.`); },
 });
-
 runPGS("TYPE-1 DIABETES genetic risk — T1D-GRS2 (PGS000833, HLA-based) [UNRELIABLE here]", `${base}/pgs/PGS000833.txt`, people, {
   fn() {
-    console.log(`\n  ⚠️ DO NOT TRUST these T1D numbers. Only ~28/66 variants matched, and the`);
-    console.log(`     HLA-DQ haplotype terms that drive ~half of T1D risk CANNOT be reproduced`);
-    console.log(`     by additive position-matching on array data — they need HLA imputation.`);
-    console.log(`  Ken HAS clinically-confirmed T1D, so his true HLA risk is high regardless of`);
-    console.log(`     this coarse score. A low score here is a TOOL limitation, not evidence.`);
-    console.log(`  Proper path: HLA imputation (e.g. SNP2HLA) → full T1D-GRS2. Flagged for the build.`);
+    console.log(`\n  ⚠️ DO NOT TRUST these T1D numbers. Only a fraction of variants match, and the`);
+    console.log(`     HLA-DQ haplotype terms that drive ~half of T1D risk CANNOT be reproduced by`);
+    console.log(`     additive position-matching on array data — they need HLA imputation (e.g. SNP2HLA).`);
+    console.log(`     Anyone with clinically-diagnosed T1D has high true HLA risk regardless of this score.`);
   },
 });
 
@@ -166,9 +150,9 @@ runPGS("TYPE-1 DIABETES genetic risk — T1D-GRS2 (PGS000833, HLA-based) [UNRELI
 if (existsSync(`${base}/pgs/panel.json`)) {
   const panel = JSON.parse(readFileSync(`${base}/pgs/panel.json`, "utf8"));
   console.log(`\n\n████  DISEASE-RISK PANEL — ${panel.length} published scores  ████`);
-  console.log("⚠️ RELATIVE to these people only (no population percentile) · research scores, NOT clinical · adult-onset hidden for Daniel (minor) · small-variant scores are noisy.");
+  console.log("⚠️ RELATIVE to the loaded people only (no population percentile) · research scores, NOT clinical · minors (--minor=) excluded from adult-onset · small-variant scores are noisy.");
   for (const s of panel) {
-    const ppl = s.adultOnset ? people.filter((p) => p.name !== "Daniel") : people;
+    const ppl = s.adultOnset ? people.filter((p) => !minorNames.has(p.name)) : people;
     runPGS(`${s.label}${s.sensitive ? " 🔒" : ""} (${s.id}, ${s.variants.toLocaleString()} variants)`, s.file, ppl);
   }
 }

@@ -49,10 +49,13 @@ function compare(name, p, c) {
   return { kin, ibs0r };
 }
 
-const [, , dad, mom, son] = process.argv;
-const D = parse(dad), M = parse(mom), S = parse(son);
-console.log("==========  Relationship analysis (IBS0)  ==========");
-compare("Ken (dad?)  vs  Daniel (son)", D, S);
-compare("Daine (mom?) vs  Daniel (son)", M, S);
-compare("Ken  vs  Daine   (control: should be unrelated adults)", D, M);
+// Usage: node tools/relationship.mjs <dna1.txt> <dna2.txt> [dna3.txt ...]
+const files = process.argv.slice(2);
+if (files.length < 2) { console.error("Usage: node tools/relationship.mjs <dna1.txt> <dna2.txt> [more...]"); process.exit(1); }
+const nameOf = (p) => p.split(/[\\/]/).pop().replace(/\.[^.]+$/, "");
+const G = files.map(parse), N = files.map(nameOf);
+console.log("==========  Relationship analysis (IBS0 + KING)  ==========");
+for (let i = 0; i < G.length; i++)
+  for (let j = i + 1; j < G.length; j++)
+    compare(`${N[i]}  vs  ${N[j]}`, G[i], G[j]);
 console.log("\n(IBS0 is genetically rigorous but this is NOT a legal paternity test.)\n");

@@ -51,6 +51,11 @@
   .msg.llama{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
   .chatrow{display:flex;gap:8px}
   #chatq{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font:inherit}
+  .faq{margin-bottom:18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 14px}
+  .faq>summary{cursor:pointer;padding:11px 0;font-size:14px;color:var(--accent);font-weight:600}
+  .faqitem{border-top:1px solid #20242e}
+  .faqitem>summary{cursor:pointer;padding:10px 0;font-size:14px;color:var(--ink)}
+  .faqitem .note{padding:0 0 11px;font-style:normal;line-height:1.55}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
   .chip{background:#222836;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;cursor:pointer}
   .chip:hover{border-color:var(--accent)}
@@ -64,6 +69,8 @@
   <div class="topbar"><h1>GeneDuet</h1><span class="langtoggle"><a data-lang="en">EN</a> · <a data-lang="es">ES</a></span></div>
   <p class="sub" data-i18n="sub">Drop your raw DNA (AncestryDNA / 23andMe / MyHeritage / FTDNA, the <code>.txt</code>/<code>.csv</code>) and read it — locally.</p>
   <div class="privacy" data-i18n="privacy">🔒 Your DNA never leaves this device. Parsing happens in your browser; the optional AI chat talks only to <b>your own local Llama (Ollama)</b> on this machine — never the cloud.</div>
+
+  <details id="faq" class="faq"><summary data-i18n="faq_title">ℹ️ How this works · FAQ</summary><div id="faqbody"></div></details>
 
   <div class="drops">
     <div class="drop" data-slot="you"><h3 data-i18n="you_h">You</h3><small data-i18n="you_s">required</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>

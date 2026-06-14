@@ -89,18 +89,20 @@ function admix(genome, table) {
   return { q, n: obs.length };
 }
 
-const base = "private";
-const people = [["Ken", "dad"], ["Daine", "mom"], ["Daniel", "son"]];
+// Usage: node tools/ancestry.mjs <dna1.txt> <dna2.txt> ...
+const files = process.argv.slice(2);
+if (!files.length) { console.error("Usage: node tools/ancestry.mjs <dna1.txt> <dna2.txt> ..."); process.exit(1); }
+const nameOf = (p) => p.split(/[\\/]/).pop().replace(/\.[^.]+$/, "");
 console.log("════════  GeneDuet — coarse continental ancestry  ════════");
 console.log("Supervised admixture (EM) over AIMs, live 1000G frequencies.");
-console.log("⚠️ COARSE — AncestryDNA's own ethnicity estimate is more accurate.\n");
+console.log("⚠️ COARSE — your testing company's own ethnicity estimate is more accurate.\n");
 
 const table = await fetchFreqs(AIMS);
 console.log(`Usable AIMs with full 1000G frequencies: ${Object.keys(table).length}\n`);
-for (const [name, file] of people) {
-  const { q, n } = admix(parseGenome(`${base}/${file}.txt`), table);
+for (const path of files) {
+  const { q, n } = admix(parseGenome(path), table);
   const line = POPS.map((k) => [POPNAME[k], q[k]]).sort((a, b) => b[1] - a[1])
     .filter(([, v]) => v > 0.02).map(([nm, v]) => `${nm} ${(v * 100).toFixed(0)}%`).join(" · ");
-  console.log(`${name.padEnd(7)} (${n} markers): ${line}`);
+  console.log(`${nameOf(path).padEnd(10)} (${n} markers): ${line}`);
 }
 console.log("\n(Coarse 5-population model. For real admixture detail, see your AncestryDNA account.)\n");
