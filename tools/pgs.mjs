@@ -5,7 +5,7 @@
 //   • Height PGS is far stronger (~40%).
 //   • No population reference here, so scores are ranked RELATIVE TO THESE PEOPLE only.
 //   • PGS are derived mostly in European-ancestry cohorts; accuracy drops otherwise.
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 const COMP = { A: "T", T: "A", C: "G", G: "C" };
 const flip = (s) => s.split("").map((b) => COMP[b] || b).join("");
@@ -148,4 +148,16 @@ runPGS("TYPE-1 DIABETES genetic risk — T1D-GRS2 (PGS000833, HLA-based) [UNRELI
   },
 });
 
-console.log("\nPGS reflect tendencies, not destiny. Environment, nutrition & chance matter enormously.\n");
+// Data-driven disease-risk panel (private/pgs/panel.json from pgs-discover.mjs)
+if (existsSync(`${base}/pgs/panel.json`)) {
+  const panel = JSON.parse(readFileSync(`${base}/pgs/panel.json`, "utf8"));
+  console.log(`\n\n████  DISEASE-RISK PANEL — ${panel.length} published scores  ████`);
+  console.log("⚠️ RELATIVE to these people only (no population percentile) · research scores, NOT clinical · adult-onset hidden for Daniel (minor) · small-variant scores are noisy.");
+  for (const s of panel) {
+    const ppl = s.adultOnset ? people.filter((p) => p.name !== "Daniel") : people;
+    runPGS(`${s.label}${s.sensitive ? " 🔒" : ""} (${s.id}, ${s.variants.toLocaleString()} variants)`, s.file, ppl);
+  }
+}
+
+console.log("\nPGS reflect tendencies, not destiny. Environment, nutrition & chance matter enormously.");
+console.log("These are research scores ranked only among the people loaded — not diagnoses, not percentiles.\n");
