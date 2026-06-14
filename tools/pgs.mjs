@@ -123,4 +123,12 @@ runPGS("HEIGHT tendency (PGS000297)", `${base}/pgs/PGS000297.txt`, people, {
   },
 });
 
+runPGS("BMI / body-size tendency (PGS000298)", `${base}/pgs/PGS000298.txt`, people, {
+  fn() { console.log(`\n  Higher score = genetic tendency toward higher BMI. Diet & activity dominate the outcome.`); },
+});
+
+runPGS("TYPE-2 DIABETES risk tendency (PGS000036)", `${base}/pgs/PGS000036.txt`, people, {
+  fn() { console.log(`\n  Higher score = higher genetic T2D liability — a risk nudge, very modifiable by lifestyle.`); },
+});
+
 console.log("\nPGS reflect tendencies, not destiny. Environment, nutrition & chance matter enormously.\n");
