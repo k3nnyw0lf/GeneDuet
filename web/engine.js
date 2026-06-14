@@ -22,7 +22,7 @@ export function parseText(text) {
   const vendor = /23andMe/i.test(head) ? "23andMe" : /AncestryDNA/i.test(head) ? "AncestryDNA"
     : /MyHeritage/i.test(head) ? "MyHeritage" : /Family ?Tree ?DNA|FTDNA/i.test(head) ? "FamilyTreeDNA" : "unknown";
   const map = new Map(), raw = new Map();
-  let total = 0;
+  let total = 0, xCalled = 0, xHet = 0, yCalled = 0;
   for (let line of text.split(/\r?\n/)) {
     if (!line || line[0] === "#") continue;
     line = line.replace(/"/g, "").trim();
@@ -35,8 +35,25 @@ export function parseText(text) {
     if (tok.length === 2) raw.set(rsid, tok);
     const clean = tok.replace(/[^ACGT]/g, "");
     if (clean.length === 2) { map.set(rsid, clean); total++; }
+    const chrom = f[1]; // sex chromosomes
+    if (chrom === "23" || chrom === "X") { if (clean.length >= 1) { xCalled++; if (clean.length === 2 && clean[0] !== clean[1]) xHet++; } }
+    else if (chrom === "24" || chrom === "Y") { if (clean.length >= 1) yCalled++; }
   }
-  return { vendor, map, raw, total };
+  return { vendor, map, raw, total, sex: { xCalled, xHet, yCalled } };
+}
+
+// Genetic sex from X heterozygosity (males hemizygous ≈0%) + Y SNP calls. Near-certain.
+export function estimateSex(genome) {
+  const { xCalled = 0, xHet = 0, yCalled = 0 } = genome.sex || {};
+  const xHetRate = xCalled ? xHet / xCalled : 0;
+  let sex, conf;
+  if (xHetRate < 0.05 && yCalled > 100) { sex = "Male (XY)"; conf = ">99%"; }
+  else if (xHetRate > 0.12 && yCalled < 100) { sex = "Female (XX)"; conf = ">99%"; }
+  else if (xCalled < 50) { sex = "unknown"; conf = "no X/Y data on this file"; }
+  else if (xHetRate < 0.05) { sex = "Male (XY)"; conf = "~95%"; }
+  else if (xHetRate > 0.12) { sex = "Female (XX)"; conf = "~95%"; }
+  else { sex = "ambiguous (possible XXY/XO/XYY)"; conf = "uncertain"; }
+  return { sex, conf, xHetRate, yCalled, xCalled };
 }
 
 const getter = (genome) => (rsid, alleles) => {

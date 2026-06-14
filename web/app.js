@@ -1,6 +1,6 @@
 // GeneDuet UI — external module so the strict CSP (script-src 'self', no
 // 'unsafe-inline') can stay locked down. Imports the shared engine.
-import { parseText, analyzePerson, predictOffspring, relationship, MYTHS } from "./engine.js";
+import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, MYTHS } from "./engine.js";
 const genomes = {}, names = { you: "You", partner: "Partner", child: "Child" };
 
 // Honesty note: list the "traits" we deliberately refuse to fake-predict.
@@ -56,7 +56,8 @@ function render() {
 }
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 function personHTML(g, a, name) {
-  let h = `<div class="card"><div class="cat">${esc(name)} — ${g.vendor}, ${g.total.toLocaleString()} SNPs</div>`;
+  const sx = estimateSex(g);
+  let h = `<div class="card"><div class="cat">${esc(name)} — ${g.vendor}, ${g.total.toLocaleString()} SNPs · Genetic sex: ${esc(sx.sex)} (${esc(sx.conf)})</div>`;
   for (const grp of a.groups) {
     h += `<div class="cat">${esc(grp.category)}</div>`;
     for (const it of grp.items) {

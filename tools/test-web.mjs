@@ -1,7 +1,7 @@
 // Verifies the browser engine (web/engine.js) on the synthetic fixtures, so we
 // know the same code the web app runs produces correct results — without a browser.
 import { readFileSync } from "node:fs";
-import { parseText, analyzePerson, predictOffspring, relationship } from "../web/engine.js";
+import { parseText, analyzePerson, predictOffspring, relationship, estimateSex } from "../web/engine.js";
 
 const read = (p) => parseText(readFileSync(p, "utf8"));
 const dad = read("tools/fixtures/dad.txt"), mom = read("tools/fixtures/mom.txt"), son = read("tools/fixtures/son.txt");
@@ -39,6 +39,13 @@ for (let i = 0; i < 4000; i++) {
 }
 check("simulated true trio reads as parent–child", relationship(simDad, simChild).verdict === "parent–child");
 check("unrelated pair reads as unrelated", relationship(simDad, simUnrel).verdict === "unrelated");
+
+// Genetic sex: hemizygous X (no het) + Y calls = male; heterozygous X + no Y = female
+const maleTxt = "# 23andMe\n" + Array.from({ length: 200 }, (_, i) => `rsy${i}\tY\t${i}\tA`).join("\n") + "\n"
+  + Array.from({ length: 200 }, (_, i) => `rsx${i}\tX\t${i}\tAA`).join("\n") + "\n";
+const femTxt = "# 23andMe\n" + Array.from({ length: 300 }, (_, i) => `rsx${i}\tX\t${i}\t${i % 2 ? "AG" : "AA"}`).join("\n") + "\n";
+check("genetic sex: male (hemizygous X + Y)", /Male/.test(estimateSex(parseText(maleTxt)).sex));
+check("genetic sex: female (het X, no Y)", /Female/.test(estimateSex(parseText(femTxt)).sex));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -14,6 +14,7 @@
 
 import { readFileSync } from "node:fs";
 import { CATALOG, CATEGORIES, MODELS, MYTHS } from "../data/catalog.mjs";
+import { estimateSex } from "../web/engine.js";
 
 // ---------- strand helpers ----------
 const COMP = { A: "T", T: "A", C: "G", G: "C" };
@@ -45,7 +46,7 @@ function parseGenome(path) {
   const vendor = detectVendor(text);
   const map = new Map();    // ACGT-only (traits/health)
   const raw = new Map();    // includes I/D/-- (for indel models)
-  let total = 0;
+  let total = 0, xCalled = 0, xHet = 0, yCalled = 0;
   for (let line of text.split(/\r?\n/)) {
     if (!line || line[0] === "#") continue;
     line = line.replace(/"/g, "").trim();
@@ -58,8 +59,11 @@ function parseGenome(path) {
     if (token.length === 2) raw.set(rsid, token);
     const clean = token.replace(/[^ACGT]/g, "");
     if (clean.length === 2) { map.set(rsid, clean); total++; }
+    const chrom = f[1]; // sex chromosomes
+    if (chrom === "23" || chrom === "X") { if (clean.length >= 1) { xCalled++; if (clean.length === 2 && clean[0] !== clean[1]) xHet++; } }
+    else if (chrom === "24" || chrom === "Y") { if (clean.length >= 1) yCalled++; }
   }
-  return { vendor, map, raw, total };
+  return { vendor, map, raw, total, sex: { xCalled, xHet, yCalled } };
 }
 
 // ---------- inheritance ----------
@@ -91,7 +95,9 @@ function getter(genome) {
 // ---------- per-person report ----------
 function personReport(genome, { name, sensitive, adultOnset }) {
   const g = getter(genome);
+  const sx = estimateSex(genome);
   console.log(`\n████  ${name}  —  ${genome.vendor}, ${genome.total.toLocaleString()} SNPs  ████`);
+  console.log(`       Genetic sex: ${sx.sex} (${sx.conf}) — X-het ${(sx.xHetRate * 100).toFixed(1)}%, Y SNPs ${sx.yCalled.toLocaleString()}`);
   let hidden = 0;
   for (const cat of CATEGORIES) {
     const entries = CATALOG.filter((e) => e.category === cat);
