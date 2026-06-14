@@ -1,7 +1,9 @@
 // GeneDuet UI — external module so the strict CSP (script-src 'self', no
 // 'unsafe-inline') can stay locked down. Imports the shared engine.
 import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, MYTHS } from "./engine.js";
+import { askLlama } from "./chat.js";
 const genomes = {}, names = { you: "You", partner: "Partner", child: "Child" };
+let chatContext = "";
 
 // Honesty note: list the "traits" we deliberately refuse to fake-predict.
 const disc = document.querySelector(".disc");
@@ -53,7 +55,56 @@ function render() {
   const show = (t) => { out.innerHTML = panels[t]; tabEl.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x.dataset.t === t)); };
   tabEl.querySelectorAll(".tab").forEach((x) => x.addEventListener("click", () => show(x.dataset.t)));
   show(tabs[0]);
+  chatContext = reportText();
+  document.getElementById("chat").classList.remove("hide");
 }
+
+// Build a plain-text summary of the computed results (interpreted, not raw DNA) for the chat.
+function reportText() {
+  const sensitive = document.getElementById("sensitive").checked;
+  const minor = document.getElementById("minor").checked;
+  let t = "";
+  for (const slot of ["you", "partner", "child"]) {
+    if (!genomes[slot]) continue;
+    const isChild = slot === "child";
+    const a = analyzePerson(genomes[slot], { sensitive: isChild ? !minor : sensitive, adultOnset: isChild ? !minor : sensitive });
+    t += `\n## ${names[slot]} — ${estimateSex(genomes[slot]).sex}\n`;
+    for (const grp of a.groups) for (const it of grp.items) {
+      if (it.muted) continue;
+      t += `- [${grp.category}] ${it.name}: ${it.genotype ? it.genotype + " → " : ""}${it.label}\n`;
+    }
+  }
+  if (genomes.you && genomes.partner) {
+    t += `\n## Predicted child (You × Partner)\n`;
+    for (const grp of predictOffspring(genomes.you, genomes.partner)) for (const it of grp.items)
+      t += `- ${it.name}: ${it.dist}${it.risk ? ` (warn ${it.risk.p}% ${it.risk.label})` : ""}\n`;
+  }
+  if (genomes.you && genomes.child) {
+    const r = relationship(genomes.you, genomes.child);
+    t += `\n## Relationship: You vs Child = ${r.verdict} (KING kinship ${r.kin.toFixed(3)}, IBS0 ${(r.ibs0r * 100).toFixed(2)}%)\n`;
+  }
+  return t.trim();
+}
+
+// Chat UI (local Llama)
+const chatlog = document.getElementById("chatlog");
+const chatq = document.getElementById("chatq");
+function addMsg(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; return d; }
+async function sendChat() {
+  const q = chatq.value.trim(); if (!q) return; chatq.value = "";
+  addMsg("you", q);
+  const bot = addMsg("llama", "…");
+  try {
+    let first = true;
+    await askLlama(q, chatContext, (tok) => { if (first) { bot.textContent = ""; first = false; } bot.textContent += tok; chatlog.scrollTop = chatlog.scrollHeight; });
+    if (first) bot.textContent = "(no response)";
+  } catch (e) {
+    bot.classList.add("err");
+    bot.textContent = `Can't reach your local Llama. Start it with:  ollama run llama3.2   (${e.message})`;
+  }
+}
+document.getElementById("chatsend").addEventListener("click", sendChat);
+chatq.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 function personHTML(g, a, name) {
   const sx = estimateSex(g);

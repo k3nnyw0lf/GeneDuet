@@ -4,7 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <!-- Privacy: block ALL network. DNA is parsed locally and never leaves the device. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+<!-- Network stays blocked EXCEPT the user's own local Ollama (on-device) for the chat. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src http://localhost:11434 http://127.0.0.1:11434;" />
 <title>GeneDuet — your DNA, read locally</title>
 <style>
   :root{--bg:#0f1115;--card:#181b22;--line:#262b36;--ink:#e9edf4;--mut:#8b93a3;--accent:#7c9cff;--warn:#ffb454;--good:#5fd0a0;--bad:#ff6b6b}
@@ -43,13 +44,20 @@
   .disc{color:var(--mut);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:14px}
   .hide{display:none}
   .err{color:var(--bad)}
+  #chat{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+  #chatlog{display:flex;flex-direction:column;gap:8px;margin:10px 0;max-height:340px;overflow:auto}
+  .msg{padding:9px 12px;border-radius:12px;max-width:85%;white-space:pre-wrap;font-size:14px}
+  .msg.you{align-self:flex-end;background:#283046;color:var(--ink)}
+  .msg.llama{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
+  .chatrow{display:flex;gap:8px}
+  #chatq{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font:inherit}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>GeneDuet</h1>
   <p class="sub">Drop your raw DNA (AncestryDNA / 23andMe / MyHeritage / FTDNA, the <code>.txt</code>/<code>.csv</code>) and read it — locally.</p>
-  <div class="privacy">🔒 Your DNA never leaves this device. No upload, no server, no network — parsing happens in your browser.</div>
+  <div class="privacy">🔒 Your DNA never leaves this device. Parsing happens in your browser; the optional AI chat talks only to <b>your own local Llama (Ollama)</b> on this machine — never the cloud.</div>
 
   <div class="drops">
     <div class="drop" data-slot="you"><h3>You</h3><small>required</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
@@ -65,6 +73,16 @@
 
   <div id="tabs" class="tabs hide"></div>
   <div id="output"></div>
+
+  <div id="chat" class="hide">
+    <div class="cat">💬 Ask Llama about these results — runs locally, private</div>
+    <div id="chatlog"></div>
+    <div class="chatrow">
+      <input id="chatq" placeholder="e.g. What does my muscle type mean? Should I worry about anything?" />
+      <button id="chatsend">Ask</button>
+    </div>
+    <p class="note">Powered by your local <b>Ollama</b> (llama3.2) — nothing leaves your device. If it can't connect, run <code>ollama run llama3.2</code>. Not medical advice.</p>
+  </div>
 
   <p class="disc">Educational only — <b>not a medical device</b> and not a legal paternity test. Consumer arrays miss rare variants; palindromic SNPs and some health markers are flagged as not reliably callable. Confirm anything important with a clinician or genetic counselor.</p>
 </div>
