@@ -1,0 +1,13 @@
+# Real DNA / personal data — NEVER commit
+private/
+*.AncestryDNA.txt
+*genome*.txt
+dna-*.txt
+*_raw_dna.*
+
+# Node
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
