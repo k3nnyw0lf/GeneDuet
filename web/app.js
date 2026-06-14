@@ -1,7 +1,12 @@
 // GeneDuet UI — external module so the strict CSP (script-src 'self', no
 // 'unsafe-inline') can stay locked down. Imports the shared engine.
-import { parseText, analyzePerson, predictOffspring, relationship } from "./engine.js";
+import { parseText, analyzePerson, predictOffspring, relationship, MYTHS } from "./engine.js";
 const genomes = {}, names = { you: "You", partner: "Partner", child: "Child" };
+
+// Honesty note: list the "traits" we deliberately refuse to fake-predict.
+const disc = document.querySelector(".disc");
+if (disc) disc.insertAdjacentHTML("beforebegin",
+  `<p class="note"><b>Deliberately not predicted</b> (no real single-gene basis, unlike what some sites sell): ${MYTHS.join(" · ")}.</p>`);
 
 document.querySelectorAll(".drop").forEach((d) => {
   const slot = d.dataset.slot, input = d.querySelector("input");

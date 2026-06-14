@@ -1,6 +1,7 @@
 // GeneDuet shared core — pure, browser-safe (no fs/DOM). Used by web/index.html
 // and by tools/test-web.mjs. Single source of truth for analysis logic.
 import { CATALOG, CATEGORIES, MODELS } from "../data/catalog.mjs";
+export { MYTHS } from "../data/catalog.mjs";
 
 const COMP = { A: "T", T: "A", C: "G", G: "C" };
 const comp = (b) => COMP[b] || b;

@@ -17,7 +17,7 @@ createServer(async (req, res) => {
     if (p === "/") p = "/web/index.html";
     const file = join(ROOT, normalize(p).replace(/^(\.\.[/\\])+/, ""));
     const body = await readFile(file);
-    res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream" });
+    res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream", "Cache-Control": "no-store" });
     res.end(body);
   } catch {
     res.writeHead(404); res.end("not found");

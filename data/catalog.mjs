@@ -18,6 +18,14 @@ export const CATEGORIES = [
   "Pharmacogenomics",
 ];
 
+// "Traits" sold by consumer DNA sites that have NO reliable single-gene basis.
+// We deliberately DON'T fake-predict these (honesty > trait count).
+export const MYTHS = [
+  "Tongue rolling", "Hitchhiker's thumb", "Widow's peak", "Finger length (2D:4D)",
+  "Cleft chin", "Ear wiggling", "Earlobe attached/free (as simple Mendelian)",
+  "Dimples", "Double-jointedness", "Personality/behavioral traits (leader, optimist, artist…)",
+];
+
 export const CATALOG = [
   // ---------------- PHYSICAL ----------------
   { id: "eye_color", name: "Eye color", category: "Physical", conf: "medium", heritable: true,
@@ -75,6 +83,9 @@ export const CATALOG = [
     rsid: "rs2187668", alleles: ["C", "T"],
     pheno: { CC: { "low HLA risk": 1 }, CT: { "one DQ2.5 tag (most never develop celiac)": 1 }, TT: { "two DQ2.5 tags (higher; still usually unaffected)": 1 } },
     note: "HLA tag only, NOT a diagnosis. Most carriers never develop celiac." },
+  { id: "sweet_pref", name: "Sweet tooth / carb preference (FGF21)", category: "Taste & Diet", conf: "low", heritable: true,
+    rsid: "rs838133", alleles: ["A", "G"],
+    pheno: { AA: { "higher sweet/carb preference": 1 }, AG: { "intermediate": 1 }, GG: { "lower sweet preference": 1 } } },
 
   // ---------------- WELLNESS & FITNESS ----------------
   { id: "muscle_actn3", name: "Muscle type (ACTN3 R577X)", category: "Wellness & Fitness", conf: "high", heritable: true,

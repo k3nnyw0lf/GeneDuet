@@ -13,7 +13,7 @@
 // leave your machine. Educational — NOT a medical device.
 
 import { readFileSync } from "node:fs";
-import { CATALOG, CATEGORIES, MODELS } from "../data/catalog.mjs";
+import { CATALOG, CATEGORIES, MODELS, MYTHS } from "../data/catalog.mjs";
 
 // ---------- strand helpers ----------
 const COMP = { A: "T", T: "A", C: "G", G: "C" };
@@ -178,4 +178,6 @@ if (C) personReport(C, { name: "CHILD", sensitive: flags.has("--minor-health"), 
 offspring(A, B);
 if (C) validateTrio(A, B, C, "CHILD");
 
-console.log("\n\nConfirm anything important with a clinical lab / genetic counselor.\n");
+console.log(`\n\n── Deliberately NOT predicted (no real single-gene basis) ──`);
+console.log("  " + MYTHS.join(" · "));
+console.log("\nConfirm anything important with a clinical lab / genetic counselor.\n");

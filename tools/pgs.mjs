@@ -36,37 +36,43 @@ function parseScoring(path) {
     if (!line || line[0] === "#") continue;
     const f = line.split("\t");
     if (!cols) { cols = {}; f.forEach((c, i) => (cols[c] = i)); continue; }
-    const rsid = f[cols.hm_rsID] || f[cols.rsID];
+    const rsid = ((cols.hm_rsID != null ? f[cols.hm_rsID] : "") || (cols.rsID != null ? f[cols.rsID] : "") || "").trim();
     const ea = (f[cols.effect_allele] || "").toUpperCase();
-    const oa = (f[cols.other_allele] || "").toUpperCase();
+    const oa = (cols.other_allele != null ? (f[cols.other_allele] || "") : "").toUpperCase();
     const w = parseFloat(f[cols.effect_weight]);
-    const chr = f[cols.hm_chr] ?? f[cols.chr_name];
-    const pos = f[cols.hm_pos] ?? f[cols.chr_position];
-    if (!rsid || !ea || Number.isNaN(w)) continue;
-    out.push({ rsid, ea, oa, w, key: `${chr}:${pos}` });
+    const chr = cols.hm_chr != null ? f[cols.hm_chr] : f[cols.chr_name];
+    const pos = cols.hm_pos != null ? f[cols.hm_pos] : f[cols.chr_position];
+    const key = `${chr}:${pos}`;
+    if (!ea || Number.isNaN(w) || (!rsid && !(chr && pos))) continue;
+    out.push({ id: rsid || key, rsid, ea, oa, w, key });
   }
   return out;
 }
 
 // effect-allele dosage (0/1/2) with strand handling; null if unresolvable
 function dosage(gt, ea, oa) {
-  const set = new Set([ea, oa].filter(Boolean));
-  let g = gt;
-  if (![...g].every((b) => set.has(b))) {
-    const fg = flip(g);
-    if ([...fg].every((b) => set.has(b))) g = fg; else return null;
+  if (oa) { // both alleles known: strand-check against the pair
+    const set = new Set([ea, oa]);
+    let g = gt;
+    if (![...g].every((b) => set.has(b))) { const fg = flip(g); if ([...fg].every((b) => set.has(b))) g = fg; else return null; }
+    return (g[0] === ea ? 1 : 0) + (g[1] === ea ? 1 : 0);
   }
-  return (g[0] === ea ? 1 : 0) + (g[1] === ea ? 1 : 0);
+  // only effect allele known (position-keyed files): count ea, flipping strand if needed
+  const obs = new Set(gt);
+  if (obs.has(ea)) return (gt[0] === ea ? 1 : 0) + (gt[1] === ea ? 1 : 0);
+  const ce = flip(ea);
+  if (obs.has(ce)) return (gt[0] === ce ? 1 : 0) + (gt[1] === ce ? 1 : 0);
+  return 0; // homozygous for the other allele
 }
 
 function coveredSet(genome, variants) {
-  const cov = new Map(); // rsid -> dosage
+  const cov = new Map(); // id -> {dosage, weight}
   for (const v of variants) {
-    let gt = genome.rs.get(v.rsid) || genome.pos.get(v.key);
+    let gt = (v.rsid && genome.rs.get(v.rsid)) || genome.pos.get(v.key);
     if (!gt) continue;
     const d = dosage(gt, v.ea, v.oa);
     if (d == null) continue;
-    cov.set(v.rsid, { d, w: v.w });
+    cov.set(v.id, { d, w: v.w });
   }
   return cov;
 }
@@ -129,6 +135,17 @@ runPGS("BMI / body-size tendency (PGS000298)", `${base}/pgs/PGS000298.txt`, peop
 
 runPGS("TYPE-2 DIABETES risk tendency (PGS000036)", `${base}/pgs/PGS000036.txt`, people, {
   fn() { console.log(`\n  Higher score = higher genetic T2D liability — a risk nudge, very modifiable by lifestyle.`); },
+});
+
+runPGS("TYPE-1 DIABETES genetic risk — T1D-GRS2 (PGS000833, HLA-based) [UNRELIABLE here]", `${base}/pgs/PGS000833.txt`, people, {
+  fn() {
+    console.log(`\n  ⚠️ DO NOT TRUST these T1D numbers. Only ~28/66 variants matched, and the`);
+    console.log(`     HLA-DQ haplotype terms that drive ~half of T1D risk CANNOT be reproduced`);
+    console.log(`     by additive position-matching on array data — they need HLA imputation.`);
+    console.log(`  Ken HAS clinically-confirmed T1D, so his true HLA risk is high regardless of`);
+    console.log(`     this coarse score. A low score here is a TOOL limitation, not evidence.`);
+    console.log(`  Proper path: HLA imputation (e.g. SNP2HLA) → full T1D-GRS2. Flagged for the build.`);
+  },
 });
 
 console.log("\nPGS reflect tendencies, not destiny. Environment, nutrition & chance matter enormously.\n");
