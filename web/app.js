@@ -158,5 +158,6 @@ async function sendChat() {
 }
 document.getElementById("chatsend").addEventListener("click", sendChat);
 chatq.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => { chatq.value = ui(c.dataset.ask, lang); sendChat(); }));
 
 applyLang("en");

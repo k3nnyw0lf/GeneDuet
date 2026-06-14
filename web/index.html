@@ -51,6 +51,9 @@
   .msg.llama{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
   .chatrow{display:flex;gap:8px}
   #chatq{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font:inherit}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+  .chip{background:#222836;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13px;cursor:pointer}
+  .chip:hover{border-color:var(--accent)}
   .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
   .langtoggle a{cursor:pointer;color:var(--mut);font-size:13px;user-select:none}
   .langtoggle a.on{color:var(--accent);font-weight:700}
@@ -79,6 +82,11 @@
 
   <div id="chat" class="hide">
     <div class="cat" data-i18n="chat_title">💬 Ask Llama about these results — runs locally, private</div>
+    <div class="chips">
+      <button class="chip" data-ask="q_diet" data-i18n="ask_diet">🍽️ Lose weight</button>
+      <button class="chip" data-ask="q_muscle" data-i18n="ask_muscle">💪 Gain muscle</button>
+      <button class="chip" data-ask="q_allergy" data-i18n="ask_allergy">🤧 Allergies</button>
+    </div>
     <div id="chatlog"></div>
     <div class="chatrow">
       <input id="chatq" data-i18n-ph="chat_ph" placeholder="e.g. What does my muscle type mean? Should I worry about anything?" />
