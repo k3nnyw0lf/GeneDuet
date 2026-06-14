@@ -77,6 +77,11 @@ function coveredSet(genome, variants) {
   return cov;
 }
 
+// normal CDF for percentile (Abramowitz-Stegun erf)
+function erf(x) { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+const phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+function loadFreq(scoringPath) { try { return JSON.parse(readFileSync(scoringPath.replace(/\.txt$/, ".freq.json"), "utf8")).p; } catch { return null; } }
+
 function runPGS(label, scoringPath, people, extra = {}) {
   const variants = parseScoring(scoringPath);
   const covs = people.map((p) => coveredSet(p.genome, variants));
@@ -91,9 +96,18 @@ function runPGS(label, scoringPath, people, extra = {}) {
   const sd = Math.sqrt(scores.reduce((a, b) => a + (b.raw - mean) ** 2, 0) / scores.length) || 1;
   scores.forEach((s) => (s.z = (s.raw - mean) / sd));
 
+  // real population percentile from cached EUR frequencies (if available)
+  const freq = loadFreq(scoringPath);
+  if (freq) scores.forEach((s, i) => {
+    let raw = 0, pm = 0, pv = 0, n = 0;
+    for (const [k, v] of covs[i]) { const p = freq[k]; if (p == null) continue; raw += v.d * v.w; pm += 2 * p * v.w; pv += 2 * p * (1 - p) * v.w * v.w; n++; }
+    if (n >= 10 && pv > 0) { s.pct = Math.round(phi((raw - pm) / Math.sqrt(pv)) * 100); s.pn = n; }
+  });
+
   console.log(`\n══════  ${label}  (${variants.length.toLocaleString()} variants, ${common.size.toLocaleString()} shared & usable)  ══════`);
   [...scores].sort((a, b) => b.raw - a.raw).forEach((s, i) =>
-    console.log(`  ${(i + 1)}. ${s.name.padEnd(7)} relative score z=${s.z >= 0 ? "+" : ""}${s.z.toFixed(2)}   (raw ${s.raw.toFixed(3)}, covered ${s.cov.toLocaleString()})`));
+    console.log(`  ${(i + 1)}. ${s.name.padEnd(7)} z=${s.z >= 0 ? "+" : ""}${s.z.toFixed(2)} vs trio` +
+      (s.pct != null ? `   ▶ ~${s.pct}th percentile vs EUR population (${s.pn} SNPs)` : "")));
   if (extra.fn) extra.fn(scores);
   return scores;
 }
