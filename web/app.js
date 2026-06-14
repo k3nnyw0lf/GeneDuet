@@ -1,15 +1,31 @@
 // GeneDuet UI — external module so the strict CSP (script-src 'self', no
-// 'unsafe-inline') can stay locked down. Imports the shared engine.
+// 'unsafe-inline') can stay locked down. Bilingual (EN/ES) via i18n.
 import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, MYTHS } from "./engine.js";
 import { askLlama } from "./chat.js";
-const genomes = {}, names = { you: "You", partner: "Partner", child: "Child" };
-let chatContext = "";
+import { ui, tr } from "../data/i18n.js";
 
-// Honesty note: list the "traits" we deliberately refuse to fake-predict.
+const genomes = {};
+let lang = "en", analyzed = false, chatContext = "";
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+// ---------- language ----------
+function applyLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.innerHTML = ui(el.dataset.i18n, l); });
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = ui(el.dataset.i18nPh, l); });
+  const mn = document.getElementById("mythnote");
+  if (mn) mn.innerHTML = ui("myths_intro", l) + MYTHS.map((m) => tr(m, l)).join(" · ") + ".";
+  document.querySelectorAll("[data-lang]").forEach((a) => a.classList.toggle("on", a.dataset.lang === l));
+  if (analyzed) render();
+}
+document.querySelectorAll("[data-lang]").forEach((a) => a.addEventListener("click", () => applyLang(a.dataset.lang)));
+
+// myth note (translated in applyLang)
 const disc = document.querySelector(".disc");
-if (disc) disc.insertAdjacentHTML("beforebegin",
-  `<p class="note"><b>Deliberately not predicted</b> (no real single-gene basis, unlike what some sites sell): ${MYTHS.join(" · ")}.</p>`);
+if (disc) disc.insertAdjacentHTML("beforebegin", `<p class="note" id="mythnote"></p>`);
 
+// ---------- file loading ----------
 document.querySelectorAll(".drop").forEach((d) => {
   const slot = d.dataset.slot, input = d.querySelector("input");
   d.addEventListener("click", () => input.click());
@@ -23,32 +39,32 @@ function load(slot, el, file) {
   r.onload = () => {
     try {
       const g = parseText(r.result);
-      if (!g.total) throw new Error("no SNPs found — is this a raw DNA file?");
+      if (!g.total) throw new Error("no SNPs");
       genomes[slot] = g;
       el.classList.add("loaded");
-      el.querySelector(".meta").textContent = `✓ ${g.vendor} · ${g.total.toLocaleString()} SNPs`;
-    } catch (err) { el.querySelector(".meta").innerHTML = `<span class="err">${err.message}</span>`; }
+      el.querySelector(".meta").textContent = `✓ ${g.vendor} · ${g.total.toLocaleString()} ${ui("snps", lang)}`;
+    } catch (err) { el.querySelector(".meta").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
     document.getElementById("run").disabled = !genomes.you;
   };
   r.readAsText(file);
 }
 
-document.getElementById("run").addEventListener("click", render);
+// ---------- render ----------
+document.getElementById("run").addEventListener("click", () => { analyzed = true; render(); });
 function render() {
   const sensitive = document.getElementById("sensitive").checked;
   const minor = document.getElementById("minor").checked;
+  const opt = (slot) => ({ sensitive: slot === "child" ? !minor : sensitive, adultOnset: slot === "child" ? !minor : sensitive, lang });
   const tabs = [], panels = {};
-
   for (const slot of ["you", "partner", "child"]) {
     if (!genomes[slot]) continue;
-    const isChild = slot === "child";
-    const a = analyzePerson(genomes[slot], { sensitive: isChild ? !minor : sensitive, adultOnset: isChild ? !minor : sensitive });
-    tabs.push(slot); panels[slot] = personHTML(genomes[slot], a, names[slot]);
+    const a = analyzePerson(genomes[slot], opt(slot));
+    tabs.push(slot); panels[slot] = personHTML(genomes[slot], a, ui(`tab_${slot}`, lang));
   }
-  if (genomes.you && genomes.partner) { tabs.push("child-pred"); panels["child-pred"] = offspringHTML(predictOffspring(genomes.you, genomes.partner)); }
+  if (genomes.you && genomes.partner) { tabs.push("child-pred"); panels["child-pred"] = offspringHTML(predictOffspring(genomes.you, genomes.partner, lang)); }
   if (genomes.you && genomes.child) { tabs.push("rel"); panels["rel"] = relHTML(); }
 
-  const labels = { you: "You", partner: "Partner", child: "Child", "child-pred": "Predicted child", rel: "Relationship" };
+  const labels = { you: ui("tab_you", lang), partner: ui("tab_partner", lang), child: ui("tab_child", lang), "child-pred": ui("tab_pred", lang), rel: ui("tab_rel", lang) };
   const tabEl = document.getElementById("tabs"); tabEl.classList.remove("hide");
   tabEl.innerHTML = tabs.map((t, i) => `<div class="tab ${i ? "" : "active"}" data-t="${t}">${labels[t]}</div>`).join("");
   const out = document.getElementById("output");
@@ -59,56 +75,9 @@ function render() {
   document.getElementById("chat").classList.remove("hide");
 }
 
-// Build a plain-text summary of the computed results (interpreted, not raw DNA) for the chat.
-function reportText() {
-  const sensitive = document.getElementById("sensitive").checked;
-  const minor = document.getElementById("minor").checked;
-  let t = "";
-  for (const slot of ["you", "partner", "child"]) {
-    if (!genomes[slot]) continue;
-    const isChild = slot === "child";
-    const a = analyzePerson(genomes[slot], { sensitive: isChild ? !minor : sensitive, adultOnset: isChild ? !minor : sensitive });
-    t += `\n## ${names[slot]} — ${estimateSex(genomes[slot]).sex}\n`;
-    for (const grp of a.groups) for (const it of grp.items) {
-      if (it.muted) continue;
-      t += `- [${grp.category}] ${it.name}: ${it.genotype ? it.genotype + " → " : ""}${it.label}\n`;
-    }
-  }
-  if (genomes.you && genomes.partner) {
-    t += `\n## Predicted child (You × Partner)\n`;
-    for (const grp of predictOffspring(genomes.you, genomes.partner)) for (const it of grp.items)
-      t += `- ${it.name}: ${it.dist}${it.risk ? ` (warn ${it.risk.p}% ${it.risk.label})` : ""}\n`;
-  }
-  if (genomes.you && genomes.child) {
-    const r = relationship(genomes.you, genomes.child);
-    t += `\n## Relationship: You vs Child = ${r.verdict} (KING kinship ${r.kin.toFixed(3)}, IBS0 ${(r.ibs0r * 100).toFixed(2)}%)\n`;
-  }
-  return t.trim();
-}
-
-// Chat UI (local Llama)
-const chatlog = document.getElementById("chatlog");
-const chatq = document.getElementById("chatq");
-function addMsg(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; return d; }
-async function sendChat() {
-  const q = chatq.value.trim(); if (!q) return; chatq.value = "";
-  addMsg("you", q);
-  const bot = addMsg("llama", "…");
-  try {
-    let first = true;
-    await askLlama(q, chatContext, (tok) => { if (first) { bot.textContent = ""; first = false; } bot.textContent += tok; chatlog.scrollTop = chatlog.scrollHeight; });
-    if (first) bot.textContent = "(no response)";
-  } catch (e) {
-    bot.classList.add("err");
-    bot.textContent = `Can't reach your local Llama. Start it with:  ollama run llama3.2   (${e.message})`;
-  }
-}
-document.getElementById("chatsend").addEventListener("click", sendChat);
-chatq.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
-const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 function personHTML(g, a, name) {
-  const sx = estimateSex(g);
-  let h = `<div class="card"><div class="cat">${esc(name)} — ${g.vendor}, ${g.total.toLocaleString()} SNPs · Genetic sex: ${esc(sx.sex)} (${esc(sx.conf)})</div>`;
+  const sx = estimateSex(g, lang);
+  let h = `<div class="card"><div class="cat">${esc(name)} — ${g.vendor}, ${g.total.toLocaleString()} ${ui("snps", lang)} · ${ui("genetic_sex", lang)}: ${esc(sx.sex)} (${esc(sx.conf)})</div>`;
   for (const grp of a.groups) {
     h += `<div class="cat">${esc(grp.category)}</div>`;
     for (const it of grp.items) {
@@ -119,11 +88,12 @@ function personHTML(g, a, name) {
       if (it.note) h += `<div class="note">${esc(it.note)}</div>`;
     }
   }
-  if (a.hidden) h += `<div class="note" style="margin-top:10px">${a.hidden} sensitive/adult-onset result(s) hidden — toggle above to reveal.</div>`;
+  if (a.hidden) h += `<div class="note" style="margin-top:10px">${ui("hidden", lang)(a.hidden)}</div>`;
   return h + "</div>";
 }
 function offspringHTML(groups) {
-  let h = `<div class="card"><div class="cat">Predicted child (You × Partner)</div>`;
+  let h = `<div class="card"><div class="cat">${ui("pred_title", lang)}</div>`;
+  h += `<div class="row"><span class="nm">${ui("sex_ratio", lang)}</span></div>`;
   for (const grp of groups) {
     h += `<div class="cat">${esc(grp.category)}</div>`;
     for (const it of grp.items) {
@@ -134,12 +104,59 @@ function offspringHTML(groups) {
   return h + "</div>";
 }
 function relHTML() {
-  const r = relationship(genomes.you, genomes.child);
-  const ok = r.verdict === "parent–child";
-  return `<div class="card"><div class="cat">Relationship — You vs Child</div>
-    <div class="verdict" style="color:${ok ? "var(--good)" : "var(--warn)"}">${ok ? "✅" : "↔"} ${esc(r.verdict)}</div>
-    <div class="row"><span class="nm">KING kinship</span><span class="val">${r.kin.toFixed(4)}</span></div>
-    <div class="row"><span class="nm">IBS0 (exclusions)</span><span class="val">${(r.ibs0r * 100).toFixed(3)}%</span></div>
-    <div class="row"><span class="nm">SNPs compared</span><span class="val">${r.n.toLocaleString()}</span></div>
-    <div class="note" style="margin-top:8px">Genetically rigorous, but not a court-admissible paternity test.</div></div>`;
+  const r = relationship(genomes.you, genomes.child, lang);
+  return `<div class="card"><div class="cat">${ui("rel_title", lang)}</div>
+    <div class="verdict" style="color:${r.parentChild ? "var(--good)" : "var(--warn)"}">${r.parentChild ? "✅" : "↔"} ${esc(r.verdict)}</div>
+    <div class="row"><span class="nm">${ui("kinship", lang)}</span><span class="val">${r.kin.toFixed(4)}</span></div>
+    <div class="row"><span class="nm">${ui("ibs0", lang)}</span><span class="val">${(r.ibs0r * 100).toFixed(3)}%</span></div>
+    <div class="row"><span class="nm">${ui("snps_compared", lang)}</span><span class="val">${r.n.toLocaleString()}</span></div>
+    <div class="note" style="margin-top:8px">${ui("rel_note", lang)}</div></div>`;
 }
+
+// ---------- chat context ----------
+function reportText() {
+  const sensitive = document.getElementById("sensitive").checked;
+  const minor = document.getElementById("minor").checked;
+  let t = "";
+  for (const slot of ["you", "partner", "child"]) {
+    if (!genomes[slot]) continue;
+    const a = analyzePerson(genomes[slot], { sensitive: slot === "child" ? !minor : sensitive, adultOnset: slot === "child" ? !minor : sensitive, lang });
+    t += `\n## ${ui(`tab_${slot}`, lang)} — ${estimateSex(genomes[slot], lang).sex}\n`;
+    for (const grp of a.groups) for (const it of grp.items) {
+      if (it.muted) continue;
+      t += `- [${grp.category}] ${it.name}: ${it.genotype ? it.genotype + " → " : ""}${it.label}\n`;
+    }
+  }
+  if (genomes.you && genomes.partner) {
+    t += `\n## ${ui("pred_title", lang)}\n`;
+    for (const grp of predictOffspring(genomes.you, genomes.partner, lang)) for (const it of grp.items)
+      t += `- ${it.name}: ${it.dist}${it.risk ? ` (! ${it.risk.p}% ${it.risk.label})` : ""}\n`;
+  }
+  if (genomes.you && genomes.child) {
+    const r = relationship(genomes.you, genomes.child, lang);
+    t += `\n## ${ui("rel_title", lang)} = ${r.verdict} (kinship ${r.kin.toFixed(3)}, IBS0 ${(r.ibs0r * 100).toFixed(2)}%)\n`;
+  }
+  return t.trim();
+}
+
+// ---------- chat ----------
+const chatlog = document.getElementById("chatlog");
+const chatq = document.getElementById("chatq");
+function addMsg(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; return d; }
+async function sendChat() {
+  const q = chatq.value.trim(); if (!q) return; chatq.value = "";
+  addMsg("you", q);
+  const bot = addMsg("llama", "…");
+  try {
+    let first = true;
+    await askLlama(q, chatContext, (tok) => { if (first) { bot.textContent = ""; first = false; } bot.textContent += tok; chatlog.scrollTop = chatlog.scrollHeight; }, lang);
+    if (first) bot.textContent = "(no response)";
+  } catch (e) {
+    bot.classList.add("err");
+    bot.textContent = `${ui("chat_fail", lang)}   (${e.message})`;
+  }
+}
+document.getElementById("chatsend").addEventListener("click", sendChat);
+chatq.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+
+applyLang("en");

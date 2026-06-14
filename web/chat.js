@@ -10,7 +10,9 @@ genetic counselor. Remind that polygenic scores and trait odds are tendencies, n
 and that consumer-array data is not clinical-grade. Be concise, warm, and plain-spoken.`;
 
 // Streams the answer; calls onToken(textChunk) as it arrives. Throws if Ollama unreachable.
-export async function askLlama(question, context, onToken) {
+// lang "es" makes Llama reply in Spanish.
+export async function askLlama(question, context, onToken, lang = "en") {
+  const langLine = lang === "es" ? "\n\nIMPORTANT: Always reply in Spanish (español)." : "";
   const res = await fetch(OLLAMA, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -19,7 +21,7 @@ export async function askLlama(question, context, onToken) {
       stream: true,
       options: { temperature: 0.3 },
       messages: [
-        { role: "system", content: `${SYSTEM}\n\n=== REPORT CONTEXT ===\n${context}` },
+        { role: "system", content: `${SYSTEM}${langLine}\n\n=== REPORT CONTEXT ===\n${context}` },
         { role: "user", content: question },
       ],
     }),

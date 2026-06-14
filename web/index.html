@@ -51,40 +51,43 @@
   .msg.llama{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
   .chatrow{display:flex;gap:8px}
   #chatq{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font:inherit}
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .langtoggle a{cursor:pointer;color:var(--mut);font-size:13px;user-select:none}
+  .langtoggle a.on{color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>GeneDuet</h1>
-  <p class="sub">Drop your raw DNA (AncestryDNA / 23andMe / MyHeritage / FTDNA, the <code>.txt</code>/<code>.csv</code>) and read it — locally.</p>
-  <div class="privacy">🔒 Your DNA never leaves this device. Parsing happens in your browser; the optional AI chat talks only to <b>your own local Llama (Ollama)</b> on this machine — never the cloud.</div>
+  <div class="topbar"><h1>GeneDuet</h1><span class="langtoggle"><a data-lang="en">EN</a> · <a data-lang="es">ES</a></span></div>
+  <p class="sub" data-i18n="sub">Drop your raw DNA (AncestryDNA / 23andMe / MyHeritage / FTDNA, the <code>.txt</code>/<code>.csv</code>) and read it — locally.</p>
+  <div class="privacy" data-i18n="privacy">🔒 Your DNA never leaves this device. Parsing happens in your browser; the optional AI chat talks only to <b>your own local Llama (Ollama)</b> on this machine — never the cloud.</div>
 
   <div class="drops">
-    <div class="drop" data-slot="you"><h3>You</h3><small>required</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
-    <div class="drop" data-slot="partner"><h3>Partner</h3><small>optional → child prediction</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
-    <div class="drop" data-slot="child"><h3>Child</h3><small>optional → relationship check</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
+    <div class="drop" data-slot="you"><h3 data-i18n="you_h">You</h3><small data-i18n="you_s">required</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
+    <div class="drop" data-slot="partner"><h3 data-i18n="partner_h">Partner</h3><small data-i18n="partner_s">optional → child prediction</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
+    <div class="drop" data-slot="child"><h3 data-i18n="child_h">Child</h3><small data-i18n="child_s">optional → relationship check</small><div class="meta"></div><input type="file" class="hide" accept=".txt,.csv"></div>
   </div>
 
   <div class="controls">
-    <label><input type="checkbox" id="sensitive"> Show sensitive adult-onset results (APOE, BRCA, Parkinson's…)</label>
-    <label><input type="checkbox" id="minor" checked> Child is a minor (hide adult-onset)</label>
-    <button id="run" disabled>Analyze</button>
+    <label><input type="checkbox" id="sensitive"> <span data-i18n="sensitive">Show sensitive adult-onset results (APOE, BRCA, Parkinson's…)</span></label>
+    <label><input type="checkbox" id="minor" checked> <span data-i18n="minor">Child is a minor (hide adult-onset)</span></label>
+    <button id="run" data-i18n="analyze" disabled>Analyze</button>
   </div>
 
   <div id="tabs" class="tabs hide"></div>
   <div id="output"></div>
 
   <div id="chat" class="hide">
-    <div class="cat">💬 Ask Llama about these results — runs locally, private</div>
+    <div class="cat" data-i18n="chat_title">💬 Ask Llama about these results — runs locally, private</div>
     <div id="chatlog"></div>
     <div class="chatrow">
-      <input id="chatq" placeholder="e.g. What does my muscle type mean? Should I worry about anything?" />
-      <button id="chatsend">Ask</button>
+      <input id="chatq" data-i18n-ph="chat_ph" placeholder="e.g. What does my muscle type mean? Should I worry about anything?" />
+      <button id="chatsend" data-i18n="chat_send">Ask</button>
     </div>
-    <p class="note">Powered by your local <b>Ollama</b> (llama3.2) — nothing leaves your device. If it can't connect, run <code>ollama run llama3.2</code>. Not medical advice.</p>
+    <p class="note" data-i18n="chat_note">Powered by your local <b>Ollama</b> (llama3.2) — nothing leaves your device. If it can't connect, run <code>ollama run llama3.2</code>. Not medical advice.</p>
   </div>
 
-  <p class="disc">Educational only — <b>not a medical device</b> and not a legal paternity test. Consumer arrays miss rare variants; palindromic SNPs and some health markers are flagged as not reliably callable. Confirm anything important with a clinician or genetic counselor.</p>
+  <p class="disc" data-i18n="disclaimer">Educational only — <b>not a medical device</b> and not a legal paternity test. Consumer arrays miss rare variants; palindromic SNPs and some health markers are flagged as not reliably callable. Confirm anything important with a clinician or genetic counselor.</p>
 </div>
 
 <script type="module" src="./app.js"></script>
