@@ -24,7 +24,8 @@ export const STRINGS = {
     chat_send: 'Ask',
     chat_note: 'Powered by your local <b>Ollama</b> (llama3.2) — nothing leaves your device. If it can\'t connect, run <code>ollama run llama3.2</code>. Not medical advice.',
     chat_fail: "Can't reach your local Llama. Start it with:  ollama run llama3.2",
-    ask_diet: '🍽️ Lose weight', ask_muscle: '💪 Gain muscle', ask_allergy: '🤧 Allergies',
+    ask_explain: '🟢 Explain simply', ask_diet: '🍽️ Lose weight', ask_muscle: '💪 Gain muscle', ask_allergy: '🤧 Allergies',
+    q_explain: "Explain my whole DNA report in simple, everyday words — no medical or gene jargon, like you're talking to a friend who isn't a scientist. Go category by category.",
     q_diet: "Based on my DNA report, what foods and eating approach would help me lose weight? Be honest about what genetics can and can't tell us.",
     q_muscle: "Based on my DNA report, what gym exercises and training approach would help me gain muscle? Be honest about genetics' limits.",
     q_allergy: "Based on my DNA report, what allergy or food-sensitivity risks might I have — and what can't DNA tell me about allergies?",
@@ -54,7 +55,8 @@ export const STRINGS = {
     chat_send: 'Preguntar',
     chat_note: 'Impulsado por tu <b>Ollama</b> local (llama3.2) — nada sale de tu dispositivo. Si no conecta, ejecuta <code>ollama run llama3.2</code>. No es consejo médico.',
     chat_fail: 'No se puede conectar con tu Llama local. Inícialo con:  ollama run llama3.2',
-    ask_diet: '🍽️ Perder peso', ask_muscle: '💪 Ganar músculo', ask_allergy: '🤧 Alergias',
+    ask_explain: '🟢 Explícalo fácil', ask_diet: '🍽️ Perder peso', ask_muscle: '💪 Ganar músculo', ask_allergy: '🤧 Alergias',
+    q_explain: 'Explica todo mi informe de ADN con palabras simples y cotidianas — sin jerga médica ni de genes, como si hablaras con un amigo que no es científico. Ve categoría por categoría.',
     q_diet: 'Según mi informe de ADN, ¿qué alimentos y qué enfoque alimentario me ayudarían a perder peso? Sé honesto sobre lo que la genética puede y no puede decirnos.',
     q_muscle: 'Según mi informe de ADN, ¿qué ejercicios de gimnasio y qué tipo de entrenamiento me ayudarían a ganar músculo? Sé honesto sobre los límites de la genética.',
     q_allergy: 'Según mi informe de ADN, ¿qué riesgos de alergias o sensibilidades alimentarias podría tener — y qué no puede decirme el ADN sobre alergias?',
@@ -154,6 +156,14 @@ export const LABELS = {
   "Earlobe attached/free (as simple Mendelian)": "Lóbulo pegado/libre (como mendeliano simple)",
   "Dimples": "Hoyuelos", "Double-jointedness": "Hiperlaxitud articular",
   "Personality/behavioral traits (leader, optimist, artist…)": "Rasgos de personalidad/conducta (líder, optimista, artista…)",
+  // plain-language labels
+  "Folate processing (MTHFR C677T)": "Procesamiento del folato (MTHFR C677T)",
+  "processes folate normally": "procesa el folato con normalidad",
+  "processes folate a bit slower (one copy)": "procesa el folato un poco más lento (una copia)",
+  "processes folate slower (two copies)": "procesa el folato más lento (dos copias)",
+  "statins usually fine": "las estatinas suelen ir bien",
+  "slightly higher chance of muscle aches from statins": "probabilidad algo mayor de dolores musculares por estatinas",
+  "higher chance of muscle aches from statins": "mayor probabilidad de dolores musculares por estatinas",
 };
 
 export const tr = (label, lang) => (lang === "es" && LABELS[label]) ? LABELS[label] : label;

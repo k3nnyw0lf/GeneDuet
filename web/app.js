@@ -7,6 +7,9 @@ import { ui, tr, FAQ } from "../data/i18n.js";
 const genomes = {};
 let lang = "en", analyzed = false, chatContext = "";
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+// split "Muscle type (ACTN3 R577X)" → ["Muscle type", "ACTN3 R577X"] so the gene code can be de-emphasized
+const splitGene = (n) => { const m = String(n).match(/^(.*?)\s*\(([^)]+)\)\s*$/); return m ? [m[1], m[2]] : [n, ""]; };
+const nmHTML = (name) => { const [p, g] = splitGene(name); return `${esc(p)}${g ? ` <span class="genetag">${esc(g)}</span>` : ""}`; };
 
 // ---------- language ----------
 function applyLang(l) {
@@ -86,7 +89,7 @@ function personHTML(g, a, name) {
       const badges = `${it.conf ? `<span class="badge">${it.conf}</span>` : ""}${it.carrier ? `<span class="badge">carrier</span>` : ""}${it.sensitive ? `<span class="badge">🔒</span>` : ""}`;
       const val = it.muted ? `<span class="note">${esc(it.label)}</span>`
         : `${it.genotype ? `<span class="gt">${esc(it.genotype)}</span> ` : ""}${esc(it.label)}${it.detail ? ` <span class="note">(${esc(it.detail)})</span>` : ""}`;
-      h += `<div class="row ${it.warn ? "warn" : ""}"><span class="nm">${esc(it.name)}${badges}</span><span class="val">${val}</span></div>`;
+      h += `<div class="row ${it.warn ? "warn" : ""}"><span class="nm">${nmHTML(it.name)}${badges}</span><span class="val">${val}</span></div>`;
       if (it.note) h += `<div class="note">${esc(it.note)}</div>`;
     }
   }
@@ -100,7 +103,7 @@ function offspringHTML(groups) {
     h += `<div class="cat">${esc(grp.category)}</div>`;
     for (const it of grp.items) {
       const risk = it.risk ? ` <span class="val warn">⚠️ ${it.risk.p}% ${esc(it.risk.label)}</span>` : "";
-      h += `<div class="row"><span class="nm">${esc(it.name)} <span class="gt">${esc(it.a)}×${esc(it.b)}</span></span><span class="val">${esc(it.dist)}${risk}</span></div>`;
+      h += `<div class="row"><span class="nm">${nmHTML(it.name)} <span class="gt">${esc(it.a)}×${esc(it.b)}</span></span><span class="val">${esc(it.dist)}${risk}</span></div>`;
     }
   }
   return h + "</div>";
