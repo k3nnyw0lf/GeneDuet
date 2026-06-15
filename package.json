@@ -1,0 +1,23 @@
+{
+  "name": "geneduet",
+  "version": "1.0.0",
+  "description": "Privacy-first, 100% in-browser consumer-DNA report — traits, health, carrier status, pharmacogenomics, ancestry, polygenic scores, offspring prediction & relationship check, plus a local-AI chat. Educational, not medical.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/k3nnyw0lf/GeneDuet",
+  "repository": { "type": "git", "url": "https://github.com/k3nnyw0lf/GeneDuet.git" },
+  "bugs": { "url": "https://github.com/k3nnyw0lf/GeneDuet/issues" },
+  "scripts": {
+    "test": "node tools/test-web.mjs",
+    "serve": "node tools/serve.mjs",
+    "report": "node tools/predict.mjs",
+    "relationship": "node tools/relationship.mjs",
+    "sex": "node tools/sex.mjs",
+    "ancestry": "node tools/ancestry.mjs",
+    "pgs": "node tools/pgs.mjs",
+    "demo": "node tools/gen-demo.mjs"
+  },
+  "keywords": ["dna", "genetics", "genomics", "23andme", "ancestrydna", "snp", "polygenic-score", "carrier-screening", "pharmacogenomics", "privacy", "client-side", "bioinformatics"],
+  "engines": { "node": ">=18" },
+  "private": false
+}

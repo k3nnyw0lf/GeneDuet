@@ -1,5 +1,9 @@
 # GeneDuet 🧬
 
+[![CI](https://github.com/k3nnyw0lf/GeneDuet/actions/workflows/ci.yml/badge.svg)](https://github.com/k3nnyw0lf/GeneDuet/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Privacy: 100% client-side](https://img.shields.io/badge/privacy-100%25%20client--side-success)
+
 **Privacy-first, 100% in-browser DNA reader.** Drop your raw genotyping file
 (AncestryDNA / 23andMe / MyHeritage / FamilyTreeDNA) and read it — locally. Your DNA
 never leaves your device: there's no server, no upload, and the page's Content-Security-Policy
@@ -56,6 +60,22 @@ on your machine (the app only ever talks to `localhost:11434`).
 - Real DNA, downloaded reference data, and generated reports live in `private/` — **gitignored,
   never committed**.
 - The web app's CSP allows no network except local Ollama for the optional chat.
+
+## Demo data
+
+No DNA file handy? Generate a synthetic, Mendelian-consistent trio and try the full UI:
+
+```bash
+npm run demo    # writes tools/fixtures/demo_{dad,mom,son}.txt (synthetic — not real DNA)
+npm run serve   # then drop the three demo_*.txt files into the You / Partner / Child zones
+```
+
+## Contributing & security
+
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[SECURITY.md](SECURITY.md)**. The
+non-negotiables: never transmit raw DNA, never invent rsIDs or effect sizes, keep the
+confidence tiers, sensitive-result gating, and educational disclaimers. Research notes that
+shaped the methods live in [docs/research-dna-analysis.md](docs/research-dna-analysis.md).
 
 ## License
 
