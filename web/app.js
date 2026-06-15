@@ -1,6 +1,6 @@
 // GeneDuet UI — external module so the strict CSP (script-src 'self', no
 // 'unsafe-inline') can stay locked down. Bilingual (EN/ES) via i18n.
-import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, MYTHS } from "./engine.js";
+import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, parentOfOrigin, MYTHS } from "./engine.js";
 import { askLlama } from "./chat.js";
 import { ui, tr, FAQ } from "../data/i18n.js";
 
@@ -67,9 +67,12 @@ function render() {
     tabs.push(slot); panels[slot] = personHTML(genomes[slot], a, ui(`tab_${slot}`, lang));
   }
   if (genomes.you && genomes.partner) { tabs.push("child-pred"); panels["child-pred"] = offspringHTML(predictOffspring(genomes.you, genomes.partner, lang)); }
+  if (genomes.you && genomes.partner) { tabs.push("carrier"); panels["carrier"] = carrierReportHTML(genomes.you, genomes.partner); }
   if (genomes.you && genomes.child) { tabs.push("rel"); panels["rel"] = relHTML(); }
+  if (genomes.you && genomes.partner && genomes.child) { tabs.push("po"); panels["po"] = parentOfOriginHTML(); }
+  tabs.push("meds"); panels["meds"] = medsHTML();
 
-  const labels = { you: ui("tab_you", lang), partner: ui("tab_partner", lang), child: ui("tab_child", lang), "child-pred": ui("tab_pred", lang), rel: ui("tab_rel", lang) };
+  const labels = { you: ui("tab_you", lang), partner: ui("tab_partner", lang), child: ui("tab_child", lang), "child-pred": ui("tab_pred", lang), carrier: ui("carrier_tab", lang), rel: ui("tab_rel", lang), po: ui("po_tab", lang), meds: ui("meds_tab", lang) };
   const tabEl = document.getElementById("tabs"); tabEl.classList.remove("hide");
   tabEl.innerHTML = tabs.map((t, i) => `<div class="tab ${i ? "" : "active"}" data-t="${t}">${labels[t]}</div>`).join("");
   const out = document.getElementById("output");
@@ -78,6 +81,7 @@ function render() {
   show(tabs[0]);
   chatContext = reportText();
   document.getElementById("chat").classList.remove("hide");
+  document.getElementById("printbtn").classList.remove("hide");
 }
 
 function personHTML(g, a, name) {
@@ -117,6 +121,59 @@ function relHTML() {
     <div class="row"><span class="nm">${ui("snps_compared", lang)}</span><span class="val">${r.n.toLocaleString()}</span></div>
     <div class="note" style="margin-top:8px">${ui("rel_note", lang)}</div></div>`;
 }
+// Pharmacogenomics "doctor card" for one person
+function pgxCardHTML(g, name) {
+  const a = analyzePerson(g, { sensitive: true, adultOnset: true, lang });
+  const grp = a.groups.find((x) => x.category === tr("Pharmacogenomics", lang));
+  if (!grp) return "";
+  let h = `<div class="card"><div class="cat">${ui("pgx_card", lang)} — ${esc(name)} (${esc(estimateSex(g, lang).sex)})</div>`;
+  for (const it of grp.items) {
+    const val = it.muted ? `<span class="note">${esc(it.label)}</span>`
+      : `${it.genotype ? `<span class="gt">${esc(it.genotype)}</span> ` : ""}${esc(it.label)}${it.detail ? ` <span class="note">(${esc(it.detail)})</span>` : ""}`;
+    h += `<div class="row ${it.warn ? "warn" : ""}"><span class="nm">${nmHTML(it.name)}</span><span class="val">${val}</span></div>`;
+  }
+  return h + `<div class="note" style="margin-top:8px">${ui("pgx_card_note", lang)}</div></div>`;
+}
+function medsHTML() {
+  let h = "";
+  for (const slot of ["you", "partner", "child"]) if (genomes[slot]) h += pgxCardHTML(genomes[slot], ui(`tab_${slot}`, lang));
+  return h || "<div class='card'><div class='note'>—</div></div>";
+}
+function carrierReportHTML(A, B) {
+  const grp = predictOffspring(A, B, lang).find((x) => x.category === tr("Carrier status", lang));
+  const risky = grp ? grp.items.filter((it) => it.risk) : [];
+  let h = `<div class="card"><div class="cat">${ui("carrier_title", lang)}</div>`;
+  if (!risky.length) h += `<div class="note">${ui("carrier_clear", lang)}</div>`;
+  else for (const it of risky) h += `<div class="row warn"><span class="nm">${nmHTML(it.name)}</span><span class="val warn">⚠️ ${it.risk.p}% ${esc(it.risk.label)}</span></div>`;
+  if (grp) for (const it of grp.items) h += `<div class="row"><span class="nm">${nmHTML(it.name)} <span class="gt">${esc(it.a)}×${esc(it.b)}</span></span><span class="val">${esc(it.dist)}</span></div>`;
+  return h + "</div>";
+}
+function parentOfOriginHTML() {
+  const okA = relationship(genomes.you, genomes.child, lang).parentChild;
+  const okB = relationship(genomes.partner, genomes.child, lang).parentChild;
+  let h = `<div class="card"><div class="cat">${ui("po_title", lang)}</div>`;
+  if (!(okA && okB)) return h + `<div class="note">${ui("po_na", lang)}</div></div>`;
+  const { rows, resolved } = parentOfOrigin(genomes.you, genomes.partner, genomes.child, lang);
+  h += `<div class="note">${ui("po_resolved", lang)(resolved)}</div>`;
+  for (const r of rows) h += `<div class="row"><span class="nm">${nmHTML(r.name)}</span><span class="val">${ui("po_from_you", lang)} <span class="gt">${esc(r.fromA)}</span> · ${ui("po_from_partner", lang)} <span class="gt">${esc(r.fromB)}</span></span></div>`;
+  return h + "</div>";
+}
+function buildPrintView() {
+  const sensitive = document.getElementById("sensitive").checked, minor = document.getElementById("minor").checked;
+  let h = `<h2>GeneDuet</h2><p class="note">${ui("privacy", lang)}</p>`;
+  for (const slot of ["you", "partner", "child"]) {
+    if (!genomes[slot]) continue;
+    const a = analyzePerson(genomes[slot], { sensitive: slot === "child" ? !minor : sensitive, adultOnset: slot === "child" ? !minor : sensitive, lang });
+    h += personHTML(genomes[slot], a, ui(`tab_${slot}`, lang));
+  }
+  h += medsHTML();
+  if (genomes.you && genomes.partner) { h += carrierReportHTML(genomes.you, genomes.partner) + offspringHTML(predictOffspring(genomes.you, genomes.partner, lang)); }
+  if (genomes.you && genomes.partner && genomes.child) h += parentOfOriginHTML();
+  if (genomes.you && genomes.child) h += relHTML();
+  h += `<p class="note">${ui("disclaimer", lang)}</p>`;
+  document.getElementById("printview").innerHTML = h;
+}
+document.getElementById("printbtn").addEventListener("click", () => { if (!genomes.you) return; buildPrintView(); window.print(); });
 
 // ---------- chat context ----------
 function reportText() {

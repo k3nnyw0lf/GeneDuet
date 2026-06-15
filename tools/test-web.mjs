@@ -1,7 +1,7 @@
 // Verifies the browser engine (web/engine.js) on the synthetic fixtures, so we
 // know the same code the web app runs produces correct results — without a browser.
 import { readFileSync } from "node:fs";
-import { parseText, analyzePerson, predictOffspring, relationship, estimateSex } from "../web/engine.js";
+import { parseText, analyzePerson, predictOffspring, relationship, estimateSex, parentOfOrigin } from "../web/engine.js";
 
 const read = (p) => parseText(readFileSync(p, "utf8"));
 const dad = read("tools/fixtures/dad.txt"), mom = read("tools/fixtures/mom.txt"), son = read("tools/fixtures/son.txt");
@@ -46,6 +46,13 @@ const maleTxt = "# 23andMe\n" + Array.from({ length: 200 }, (_, i) => `rsy${i}\t
 const femTxt = "# 23andMe\n" + Array.from({ length: 300 }, (_, i) => `rsx${i}\tX\t${i}\t${i % 2 ? "AG" : "AA"}`).join("\n") + "\n";
 check("genetic sex: male (hemizygous X + Y)", /Male/.test(estimateSex(parseText(maleTxt)).sex));
 check("genetic sex: female (het X, no Y)", /Female/.test(estimateSex(parseText(femTxt)).sex));
+
+// Parent-of-origin: dad CC, mom TT, child CT → C traces to dad, T to mom (ACTN3 rs1815739)
+const poDad = parseText("# 23andMe\nrs1815739\t11\t1\tCC\n");
+const poMom = parseText("# 23andMe\nrs1815739\t11\t1\tTT\n");
+const poChild = parseText("# 23andMe\nrs1815739\t11\t1\tCT\n");
+const po = parentOfOrigin(poDad, poMom, poChild);
+check("parent-of-origin traces het child allele to each parent", po.rows.length >= 1 && po.rows[0].fromA === "C" && po.rows[0].fromB === "T");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

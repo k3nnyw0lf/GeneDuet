@@ -63,6 +63,6 @@ const panel = existsSync("private/pgs/panel.json") ? JSON.parse(readFileSync("pr
 for (const [id, file] of [...main, ...panel]) {
   if (!existsSync(file)) { console.log(`skip ${id} (no file)`); continue; }
   const n = await buildFreq(id, file);
-  console.log(`✓ ${id}: cached EUR freqs for ${n} variants`);
+  console.log(`✓ ${id}: cached 5-pop (AFR/AMR/EAS/EUR/SAS) freqs for ${n} variants`);
 }
 console.log("\nDone — re-run pgs.mjs for percentiles.");

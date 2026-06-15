@@ -119,6 +119,27 @@ export function predictOffspring(A, B, lang = "en") {
   return out;
 }
 
+// Parent-of-origin: at heterozygous-in-child sites, trace which allele came from which
+// parent (resolvable when only one assignment is Mendelian-consistent). Caller must first
+// confirm BOTH adults are the child's biological parents (via relationship()).
+export function parentOfOrigin(A, B, child, lang = "en") {
+  const ga = getter(A), gb = getter(B), gc = getter(child);
+  const rows = []; let resolved = 0;
+  for (const e of CATALOG) {
+    if (!e.rsid || !e.alleles || isPalin(e.alleles) || !e.heritable) continue;
+    const a = ga(e.rsid, e.alleles), b = gb(e.rsid, e.alleles), c = gc(e.rsid, e.alleles);
+    if (!a || !b || !c || c[0] === c[1]) continue; // need het child to be informative
+    const [c1, c2] = c, aHas = (x) => a.includes(x), bHas = (x) => b.includes(x);
+    const asn1 = aHas(c1) && bHas(c2), asn2 = aHas(c2) && bHas(c1);
+    let fromA, fromB;
+    if (asn1 && !asn2) { fromA = c1; fromB = c2; }
+    else if (asn2 && !asn1) { fromA = c2; fromB = c1; }
+    else continue; // ambiguous (both parents het) or inconsistent
+    resolved++; rows.push({ name: tr(e.name, lang), fromA, fromB });
+  }
+  return { rows, resolved };
+}
+
 // IBS0 + KING kinship between two genomes
 export function relationship(A, B, lang = "en") {
   let n = 0, ibs0 = 0, het1 = 0, het2 = 0, hethet = 0, ibs2 = 0;
