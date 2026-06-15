@@ -99,15 +99,16 @@ function runPGS(label, scoringPath, people, extra = {}) {
   // real population percentile from cached EUR frequencies (if available)
   const freq = loadFreq(scoringPath);
   if (freq) scores.forEach((s, i) => {
+    const pop = people[i].pop || "EUR";
     let raw = 0, pm = 0, pv = 0, n = 0;
-    for (const [k, v] of covs[i]) { const p = freq[k]; if (p == null) continue; raw += v.d * v.w; pm += 2 * p * v.w; pv += 2 * p * (1 - p) * v.w * v.w; n++; }
-    if (n >= 10 && pv > 0) { s.pct = Math.round(phi((raw - pm) / Math.sqrt(pv)) * 100); s.pn = n; }
+    for (const [k, v] of covs[i]) { const pf = freq[k]; if (!pf) continue; const p = pf[pop]; if (p == null) continue; raw += v.d * v.w; pm += 2 * p * v.w; pv += 2 * p * (1 - p) * v.w * v.w; n++; }
+    if (n >= 10 && pv > 0) { s.pct = Math.round(phi((raw - pm) / Math.sqrt(pv)) * 100); s.pn = n; s.pop = pop; }
   });
 
   console.log(`\n══════  ${label}  (${variants.length.toLocaleString()} variants, ${common.size.toLocaleString()} shared & usable)  ══════`);
   [...scores].sort((a, b) => b.raw - a.raw).forEach((s, i) =>
     console.log(`  ${(i + 1)}. ${s.name.padEnd(7)} z=${s.z >= 0 ? "+" : ""}${s.z.toFixed(2)} vs trio` +
-      (s.pct != null ? `   ▶ ~${s.pct}th percentile vs EUR population (${s.pn} SNPs)` : "")));
+      (s.pct != null ? `   ▶ ~${s.pct}th percentile vs ${s.pop} (${s.pn} SNPs)` : "")));
   if (extra.fn) extra.fn(scores);
   return scores;
 }
@@ -118,12 +119,15 @@ const base = "private";
 const argv = process.argv.slice(2);
 const files = argv.filter((a) => !a.startsWith("--"));
 const minorNames = new Set(argv.filter((a) => a.startsWith("--minor=")).map((a) => a.slice(8)));
-if (!files.length) { console.error("Usage: node tools/pgs.mjs <dna1.txt> <dna2.txt> ... [--minor=<name>]"); process.exit(1); }
+const popMap = {};
+for (const a of argv) { const m = /^--pop=([^:]+):(AFR|AMR|EAS|EUR|SAS)$/.exec(a); if (m) popMap[m[1]] = m[2]; }
+if (!files.length) { console.error("Usage: node tools/pgs.mjs <dna1.txt> ... [--minor=<name>] [--pop=<name>:EUR|AFR|AMR|EAS|SAS]"); process.exit(1); }
 const nameOf = (p) => p.split(/[\\/]/).pop().replace(/\.[^.]+$/, "");
-const people = files.map((p) => ({ name: nameOf(p), genome: parseGenome(p) }));
+const people = files.map((p) => { const name = nameOf(p); return { name, genome: parseGenome(p), pop: popMap[name] || "EUR" }; });
 
 console.log("════════  GeneDuet — polygenic scores  ════════");
-console.log("Relative to the loaded people only · not a population percentile · not a diagnosis.");
+console.log("Percentiles use each person's ancestry reference (--pop=name:POP, default EUR).");
+console.log("⚠️ PRS are trained mostly on European data — accuracy is LOWER off-European, even with a matched reference.");
 
 runPGS("COGNITIVE / fluid-intelligence tendency (PGS001232)", `${base}/pgs/PGS001232.txt`, people, {
   fn() { console.log(`\n  ⚠️ Explains only ~7–12% of variance — a population tendency, NOT an IQ value. Children regress toward the mean.`); },

@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 const COMP = { A: "T", T: "A", C: "G", G: "C" };
 const comp = (b) => COMP[b] || b;
 const CAP = 600; // max variants/score to look up (keeps Ensembl calls bounded)
+const POPS = ["AFR", "AMR", "EAS", "EUR", "SAS"]; // 1000G super-populations for ancestry-matched percentiles
 
 function parseScoring(path) {
   const lines = readFileSync(path, "utf8").split(/\r?\n/);
@@ -39,17 +40,20 @@ async function buildFreq(id, file) {
   for (let i = 0; i < ids.length; i += 200) {
     let j; try { j = await ensembl(ids.slice(i, i + 200)); } catch { continue; }
     for (const rs in j) {
-      const ea = byRsid[rs];
-      let f = null;
+      const ea = byRsid[rs], ce = comp(ea);
+      const byPop = {};
       for (const e of j[rs].populations || []) {
-        if (e.population !== "1000GENOMES:phase_3:EUR") continue;
-        if (e.allele === ea) f = e.frequency;
-        else if (f == null && e.allele === comp(ea)) f = e.frequency; // strand
+        const m = /1000GENOMES:phase_3:(AFR|AMR|EAS|EUR|SAS)$/.exec(e.population);
+        if (!m) continue;
+        if (e.allele === ea) byPop[m[1]] = e.frequency;
+        else if (byPop[m[1]] == null && e.allele === ce) byPop[m[1]] = e.frequency; // strand
       }
-      if (f != null) p[rs] = Math.min(0.999, Math.max(0.001, f));
+      if (POPS.every((P) => byPop[P] != null)) { // keep only variants with all super-pops
+        p[rs] = {}; for (const P of POPS) p[rs][P] = Math.min(0.999, Math.max(0.001, byPop[P]));
+      }
     }
   }
-  writeFileSync(`private/pgs/${id}.freq.json`, JSON.stringify({ ref: "1000G EUR", n: Object.keys(p).length, p }));
+  writeFileSync(`private/pgs/${id}.freq.json`, JSON.stringify({ ref: "1000G", pops: POPS, n: Object.keys(p).length, p }));
   return Object.keys(p).length;
 }
 
